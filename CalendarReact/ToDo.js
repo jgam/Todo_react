@@ -28,7 +28,7 @@ export default class ToDo extends React.Component{
 				</View>
 					{isEditing ? (
 						<View style={styles.actions}>
-							<TouchableOpacity onPressOut={this._finishEditing}>
+							<TouchableOpacity onPressOut={this._finishEditing}	>
 								<View style={styles.actionContainer}>
 									<Text style={styles.actionText}>✅</Text>
 								</View>
