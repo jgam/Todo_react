@@ -16,9 +16,15 @@ export default class App extends React.Component {
         <StatusBar barStyle="light-content"/>
         <Text style={styles.title}>감정한</Text>
         <View style={styles.card}>
-          <TextInput style={styles.input} placeholder={"New To Do"} value={newToDo} onChangeText={this._controlNewToDo} placeholderTextColor={"#999"} returnKeyType={"done"} autoCorrect={false}/>
+          <TextInput style={styles.input}
+                     placeholder={"New To Do"} 
+                     value={newToDo} 
+                     onChangeText={this._controlNewToDo}
+                      placeholderTextColor={"#999"}
+                     returnKeyType={"done"}
+                     autoCorrect={false}/>
           <ScrollView contentContainerStyle={styles.toDos}>
-            <ToDo/>
+            <ToDo text={"Hello I'm a To Do"}/>
           </ScrollView>
         </View>
       </View>
@@ -27,8 +33,8 @@ export default class App extends React.Component {
   _controlNewToDo = text => {
     this.setState({
       newToDo: text
-    })
-  }
+    });
+  };
 }
 
 const styles = StyleSheet.create({
