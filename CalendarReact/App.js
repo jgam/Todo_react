@@ -1,61 +1,86 @@
-import React from 'react';
-import { StyleSheet, Text, View, StatusBar, TextInput, Dimensions, Platform, ScrollView } from 'react-native';
-import {AppLoading} from "expo";
+import React from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  StatusBar,
+  TextInput,
+  Dimensions,
+  Platform,
+  ScrollView,
+  AsyncStorage
+} from "react-native";
+import { AppLoading } from "expo";
 import ToDo from "./ToDo";
 import uuidv1 from "uuid/v1";
 
-
-const {height, width} = Dimensions.get("window")
+const { height, width } = Dimensions.get("window");
 
 export default class App extends React.Component {
   state = {
     newToDo: "",
-    loadedToDos: false
+    loadedToDos: false,
+    toDos: {}
   };
   componentDidMount = () => {
     this._loadToDos();
-  }
+  };
   render() {
-    const { newToDo} = this.state;
-    const {loadedToDos} = this.state;
-    if(!loadedToDos){
+    const { newToDo, loadedToDos, toDos } = this.state;
+    if (!loadedToDos) {
       return <AppLoading />;
     }
     return (
       <View style={styles.container}>
-        <StatusBar barStyle="light-content"/>
-        <Text style={styles.title}>감정한</Text>
+        <StatusBar barStyle="light-content" />
+        <Text style={styles.title}>감정한ox캘린더</Text>
         <View style={styles.card}>
-          <TextInput style={styles.input}
-                     placeholder={"New To Do"} 
-                     value={newToDo} 
-                     onChangeText={this._controlNewToDo}
-                      placeholderTextColor={"#999"}
-                     returnKeyType={"done"}
-                     autoCorrect={false}
-                     onSubmitEditing={this._addToDo}
-
-                     />
+          <TextInput
+            style={styles.input}
+            placeholder={"New To Do"}
+            value={newToDo}
+            onChangeText={this._crontollNewToDo}
+            placeholderTextColor={"#999"}
+            returnKeyType={"done"}
+            autoCorrect={false}
+            onSubmitEditing={this._addToDo}
+            underlineColorAndroid={"transparent"}
+          />
           <ScrollView contentContainerStyle={styles.toDos}>
-            <ToDo text={"Hello I'm a To Do"}/>
+            {Object.values(toDos)
+              .reverse()
+              .map(toDo => (
+                <ToDo
+                  key={toDo.id}
+                  deleteToDo={this._deleteToDo}
+                  uncompleteToDo={this._uncompleteToDo}
+                  completeToDo={this._completeToDo}
+                  updateToDo={this._updateToDo}
+                  {...toDo}
+                />
+              ))}
           </ScrollView>
         </View>
       </View>
     );
   }
-  _controlNewToDo = text => {
+  _crontollNewToDo = text => {
     this.setState({
       newToDo: text
     });
   };
-  _loadToDos = () => {
-    this.setState({
-      loadedToDos: true
-    })
+  _loadToDos = async () => {
+    try {
+      const toDos = await AsyncStorage.getItem("toDos");
+      const parsedToDos = JSON.parse(toDos);
+      this.setState({ loadedToDos: true, toDos: parsedToDos || {} });
+    } catch (err) {
+      console.log(err);
+    }
   };
   _addToDo = () => {
-    const {newToDo} = this.state;
-    if(newToDo !== ""){
+    const { newToDo } = this.state;
+    if (newToDo !== "") {
       this.setState(prevState => {
         const ID = uuidv1();
         const newToDoObject = {
@@ -66,49 +91,105 @@ export default class App extends React.Component {
             createdAt: Date.now()
           }
         };
-        const newState={
+        const newState = {
           ...prevState,
+          newToDo: "",
           toDos: {
             ...prevState.toDos,
             ...newToDoObject
           }
         };
-        return {...newState};
-      });   
+        this._saveToDos(newState.toDos);
+        return { ...newState };
+      });
     }
+  };
+  _deleteToDo = id => {
+    this.setState(prevState => {
+      const toDos = prevState.toDos;
+      delete toDos[id];
+      const newState = {
+        ...prevState,
+        ...toDos
+      };
+      this._saveToDos(newState.toDos);
+      return { ...newState };
+    });
+  };
+  _uncompleteToDo = id => {
+    this.setState(prevState => {
+      const newState = {
+        ...prevState,
+        toDos: {
+          ...prevState.toDos,
+          [id]: {
+            ...prevState.toDos[id],
+            isCompleted: false
+          }
+        }
+      };
+      this._saveToDos(newState.toDos);
+      return { ...newState };
+    });
+  };
+  _completeToDo = id => {
+    this.setState(prevState => {
+      const newState = {
+        ...prevState,
+        toDos: {
+          ...prevState.toDos,
+          [id]: { ...prevState.toDos[id], isCompleted: true }
+        }
+      };
+      this._saveToDos(newState.toDos);
+      return { ...newState };
+    });
+  };
+  _updateToDo = (id, text) => {
+    this.setState(prevState => {
+      const newState = {
+        ...prevState,
+        toDos: {
+          ...prevState.toDos,
+          [id]: { ...prevState.toDos[id], text: text }
+        }
+      };
+      this._saveToDos(newState.toDos);
+      return { ...newState };
+    });
+  };
+  _saveToDos = newToDos => {
+    const saveToDos = AsyncStorage.setItem("toDos", JSON.stringify(newToDos));
   };
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f23657',
-    alignItems: 'center'
-    //justifyContent: 'center',
+    backgroundColor: "#F23657",
+    alignItems: "center"
   },
-  title:{
+  title: {
     color: "white",
     fontSize: 30,
     marginTop: 50,
-    fontWeight: "400",
+    fontWeight: "200",
     marginBottom: 30
   },
-  card:{
+  card: {
     backgroundColor: "white",
     flex: 1,
     width: width - 25,
-    borderRadius: 10,
-    marginBottom: 50,
     borderTopLeftRadius: 10,
-    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
     ...Platform.select({
-      ios:{
-        shadowColor:"rgb(50, 50, 50)",
+      ios: {
+        shadowColor: "rgb(50, 50, 50)",
         shadowOpacity: 0.5,
         shadowRadius: 5,
-        shadowOffset:{
-          height:-1,
-          width:0
+        shadowOffset: {
+          height: -1,
+          width: 0
         }
       },
       android: {
@@ -126,6 +207,3 @@ const styles = StyleSheet.create({
     alignItems: "center"
   }
 });
-
-//shadows are different for devices so we have to approach differently for shadow!
-//as you can see the ...Platform sleect does the work
